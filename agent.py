@@ -1,7 +1,11 @@
-import os                                                                                                                                                                                
+import os       
+  import json                                                                                                                                                                              
   from groq import Groq                                                                                                                                                                    
+  from dotenv import load_dotenv                                                                                                                                                           
                                                                                                                                                                                            
-  client = Groq(api_key="your_api_key_here")                                                                                                                                               
+  load_dotenv()                                                                                                                                                                            
+                                                                                                                                                                                           
+  client = Groq(api_key=os.environ.get("GROQ_API_KEY"))                                                                                                                                              
    
   messages = [                                                                                                                                                                             
       {"role": "user", "content": "What is an AI agent?"}
