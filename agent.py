@@ -7,9 +7,8 @@ load_dotenv()
 
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-# --- STEP A: Define the actual Python function ---
+# Tool function
 def get_weather(city: str) -> str:
-    # Fake data for now — real version would call a weather API
     weather_data = {
         "berlin": "18°C, cloudy",
         "london": "12°C, rainy",
@@ -17,7 +16,13 @@ def get_weather(city: str) -> str:
     }
     return weather_data.get(city.lower(), "Weather data not available for this city")
 
-# --- STEP B: Describe the tool to the LLM ---
+# Map tool names to actual functions
+# This lets us call any tool by name dynamically
+available_tools = {
+    "get_weather": get_weather
+}
+
+# Tool descriptions for the LLM
 tools = [
     {
         "type": "function",
@@ -38,17 +43,51 @@ tools = [
     }
 ]
 
-
+# Start conversation
 messages = [
-    {"role": "user", "content": "What's the weather in Berlin?"}
+    {"role": "user", "content": "What's the weather in Berlin and tokyo?"}
 ]
 
-response = client.chat.completions.create(
-    model="llama-3.1-8b-instant",
-    messages=messages,
-    tools=tools,
-    max_tokens=512
-)
+print("Starting agent loop...\n")
 
-print(response.choices[0].message)
+# THE AGENT LOOP
+while True:
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=messages,
+        tools=tools,
+        max_tokens=512
+    )
 
+    response_message = response.choices[0].message
+
+    # Case 1: LLM wants to call a tool
+    if response_message.tool_calls:
+        # Add LLM's response to message history
+        messages.append(response_message)
+
+        # Process each tool call (LLM can request multiple at once)
+        for tool_call in response_message.tool_calls:
+            tool_name = tool_call.function.name
+            tool_inputs = json.loads(tool_call.function.arguments)
+
+            print(f"Tool called: {tool_name}")
+            print(f"Inputs: {tool_inputs}")
+
+            # Run the actual Python function
+            tool_result = available_tools[tool_name](**tool_inputs)
+
+            print(f"Result: {tool_result}\n")
+
+            # Feed result back into message history
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "content": tool_result
+            })
+
+    # Case 2: LLM gave a final text answer — we're done
+    else:
+        print("Final answer:")
+        print(response_message.content)
+        break
