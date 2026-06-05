@@ -16,10 +16,19 @@ def get_weather(city: str) -> str:
     }
     return weather_data.get(city.lower(), "Weather data not available for this city")
 
+def get_population(city: str) -> str:
+    data = {
+        "berlin": "3.7 million",
+        "london": "9 million",
+        "tokyo": "14 million"
+    }
+    return data.get(city.lower(), "Population data not available for this city")
+
 # Map tool names to actual functions
 # This lets us call any tool by name dynamically
 available_tools = {
-    "get_weather": get_weather
+    "get_weather": get_weather,
+    "get_population": get_population,
 }
 
 # Tool descriptions for the LLM
@@ -40,12 +49,29 @@ tools = [
                 "required": ["city"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_population",
+            "description": "Get the population of a given city",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "city": {
+                        "type": "string",   
+                        "description": "The name of the city"
+                    }
+                },
+                "required": ["city"]
+            }
+        }
     }
 ]
 
 # Start conversation
 messages = [
-    {"role": "user", "content": "What's the weather in Berlin and tokyo?"}
+    {"role": "user", "content": "What's the weather and population in Berlin?"}
 ]
 
 print("Starting agent loop...\n")
@@ -89,5 +115,13 @@ while True:
     # Case 2: LLM gave a final text answer — we're done
     else:
         print("Final answer:")
+        # print(response_message.content)
+
+        messages.append({"role": "assistant", "content": response_message.content})
         print(response_message.content)
+
         break
+
+
+# import pprint
+# pprint.pprint(messages)
