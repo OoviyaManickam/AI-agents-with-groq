@@ -119,6 +119,8 @@ graph.add_edge(
 # Compile
 agent = graph.compile()
 
+print(agent.get_graph().draw_ascii())
+
 # ── 7. RUN ────────────────────────────────────────────────────────────────────
 
 print("Starting LangGraph agent...\n")
